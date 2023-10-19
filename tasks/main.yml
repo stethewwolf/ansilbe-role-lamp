@@ -1,0 +1,280 @@
+---
+- name: Install LAMP packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  loop: "{{ lamp_packages }}"
+
+### manage proxies 
+- name: Template virtualhost for proxies
+  template:
+    src: proxy-vhost.conf
+    dest: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  loop: "{{ proxies_list }}"
+  when: "{{ proxies_list }}"
+
+- name: Enable proxies virtualhosts
+  file:
+    src: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+    dest: "/etc/apache2/sites-enabled/{{ item.domain }}.conf"
+    state: link
+  when: "{{ proxies_list }}" and item.enabled 
+  loop: "{{ proxies_list }}"
+  notify: restart_apache2
+
+
+#- name: Add users virtualhost
+#  group:
+#    name: vhosts
+#    system: yes
+#
+#- name: Add users virtualhost
+#  user:
+#    name: "{{ item.user }}"
+#    system: yes
+#    home: "/var/www/{{ item.user }}"
+#    shell: /sbin/nologin
+#    groups:
+#      - www-data
+#      - vhosts
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: "{{ list_of_virtualhosts }}"
+#
+#- name: Create SRC folders
+#  file:
+#    path: "/var/www/{{ item.user }}/src"
+#    state: directory
+#    owner: "{{ item.user }}"
+#    group: www-data
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: "{{ list_of_virtualhosts }}"
+#
+#- name: Create HTML folders
+#  file:
+#    path: "/var/www/{{ item.user }}/html"
+#    state: directory
+#    owner: "{{ item.user }}"
+#    group: www-data
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: not item.wp_enabled and "{{ list_of_virtualhosts }}"
+#
+#- name: Template index html
+#  template:
+#    src: index.html
+#    dest: "/var/www/{{ item.user }}/html/index.html"
+#    owner: "{{ item.user }}"
+#    group: www-data
+#    mode: '0644'
+#    backup: true
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: not item.wp_enabled and "{{ list_of_virtualhosts }}"
+#
+#- name: Create log folders
+#  file:
+#    path: "/var/www/{{ item.user }}/logs"
+#    state: directory
+#    owner: "{{ item.user }}"
+#    group: www-data
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: "{{ list_of_virtualhosts }}"
+#
+#
+#- name: Create tmp folders
+#  file:
+#    path: "/var/www/{{ item.user }}/tmp"
+#    state: directory
+#    owner: "{{ item.user }}"
+#    group: www-data
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: "{{ list_of_virtualhosts }}"
+#
+#- name: Template virtualhost
+#  template:
+#    src: virtualhost.conf
+#    dest: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+#    owner: root
+#    group: root
+#    mode: '0644'
+#    backup: true
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: not item.wp_enabled and "{{ list_of_virtualhosts }}"
+#
+#- name: Template virtualhost for wordpress
+#  template:
+#    src: wp.virtualhost.conf
+#    dest: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+#    owner: root
+#    group: root
+#    mode: '0644'
+#    backup: true
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: item.wp_enabled and "{{ list_of_virtualhosts }}"
+#
+#- name: Enable virtualhosts
+#  file:
+#    src: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+#    dest: "/etc/apache2/sites-enabled/{{ item.domain }}.conf"
+#    state: link
+#  when: item.vhost_enabled and "{{ list_of_virtualhosts }}"
+#  loop: "{{ list_of_virtualhosts }}"
+#  notify: restart_apache2
+#
+#- name: Create a new database per domain
+#  mysql_db:
+#    name: "{{ item.user }}_db"
+#    state: present
+#    login_unix_socket: /var/run/mysqld/mysqld.sock
+#  when: item.db_enabled and "{{ list_of_virtualhosts }}"
+#  loop: "{{ list_of_virtualhosts }}"
+#
+#- name: Create db user per domain with password, all database privileges and 'WITH GRANT OPTION' in db
+#  mysql_user:
+#    state: present
+#    name: "{{ item.user }}"
+#    password: "{{ item.pass }}"
+#    login_unix_socket: /var/run/mysqld/mysqld.sock
+#    priv: "{{ item.user }}_db.*:ALL,GRANT"
+#  when: item.db_enabled and "{{ list_of_virtualhosts }}"
+#  loop: "{{ list_of_virtualhosts }}"
+#
+#
+#- name: Download latest wordpress
+#  get_url:
+#    url: https://wordpress.org/latest.tar.gz
+#    dest: "/var/www/{{ item.user }}/src/wp-latest.tar.gz"
+#    mode: '0440'
+#  when: item.wp_enabled
+#  loop: "{{ list_of_virtualhosts }}"
+#  when: item.wp_enabled and "{{ list_of_virtualhosts }}"
+#
+#- name: extract wordpress
+#  ansible.builtin.unarchive:
+#    src: "/var/www/{{ item.user }}/src/wp-latest.tar.gz"
+#    dest: "/var/www/{{ item.user }}/"
+#    remote_src: yes
+#    owner: "{{ item.user }}"
+#    group: www-data
+#  when: item.wp_enabled and "{{ list_of_virtualhosts }}"
+#  loop: "{{ list_of_virtualhosts }}"
+#
+#- name: Allow connections on HTTP ports
+#  ansible.builtin.iptables:
+#    chain: INPUT
+#    protocol: tcp
+#    destination_port: "80"
+#    jump: ACCEPT
+#  notify: run_iptables_save
+#  when: "{{ enable_http }}"
+#
+#- name: Allow connections on HTTPS ports
+#  ansible.builtin.iptables:
+#    chain: INPUT
+#    protocol: tcp
+#    destination_port: "443"
+#    jump: ACCEPT
+#  notify: run_iptables_save
+#  when: "{{ enable_https }}"
+#
+#- name: Copy fail2ban wp hard jail conf
+#  copy:
+#    src: wordpress-hard.conf
+#    dest: /etc/fail2ban/jail.d/wordpress-hard.conf
+#    owner: root
+#    group: root
+#    mode: u=rw,g=r,o=r
+#  notify: restart_fail2ban
+#
+#- name: Copy fail2ban wp soft jail conf
+#  copy:
+#    src: wordpress-soft.conf
+#    dest: /etc/fail2ban/jail.d/wordpress-soft.conf
+#    owner: root
+#    group: root
+#    mode: u=rw,g=r,o=r
+#  notify: restart_fail2ban
+#
+#- name: Copy fail2ban wp soft jail conf
+#  copy:
+#    src: wordpress-extra.conf
+#    dest: /etc/fail2ban/jail.d/wordpress-extra.conf
+#    owner: root
+#    group: root
+#    mode: u=rw,g=r,o=r
+#  notify: restart_fail2ban
+#
+#- name: Download fail2ban wp hard filter conf
+#  get_url:
+#    url: https://plugins.svn.wordpress.org/wp-fail2ban/trunk/filters.d/wordpress-hard.conf
+#    dest: /etc/fail2ban/filter.d/wordpress-hard.conf
+#    mode: '0440'
+#    owner: root
+#    group: root
+#
+#- name: Download fail2ban wp soft filter conf
+#  get_url:
+#    url: https://plugins.svn.wordpress.org/wp-fail2ban/trunk/filters.d/wordpress-soft.conf
+#    dest: /etc/fail2ban/filter.d/wordpress-soft.conf
+#    mode: '0440'
+#    owner: root
+#    group: root
+#
+#- name: Download fail2ban wp extra filter conf
+#  get_url:
+#    url: https://plugins.svn.wordpress.org/wp-fail2ban/trunk/filters.d/wordpress-extra.conf
+#    dest: /etc/fail2ban/filter.d/wordpress-extra.conf
+#    mode: '0440'
+#    owner: root
+#    group: root
+#
+#- name: Ensure wordpress  extra fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[wordpress-extra]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure wordpress sfot fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[wordpress-soft]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensureapache-auth fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[apache-auth]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure apache-badbots fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[apache-badbots]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure apache-noscript fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[apache-noscript]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure apache-overflows fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[apache-overflows]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure apache-shellshock fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[apache-shellshock]\nenabled = true"
+#  notify: restart_fail2ban
+#
+#- name: Ensure apache-modsecurity fail2ban is enabled
+#  ansible.builtin.lineinfile:
+#    path: /etc/fail2ban/jail.local
+#    line: "[wordpress-soft]\nenabled = true"
+#  notify: restart_fail2ban

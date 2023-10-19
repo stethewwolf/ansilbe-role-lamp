@@ -1,0 +1,11 @@
+## Here internal variables for lamp
+lamp_packages: 
+  - apache2
+  - mariadb-server
+  - libapache2-mod-php
+  - libapache2-mpm-itk
+  - python3-certbot-apache 
+  - php-mysql
+  - certbot
+  - python3-pymysql
+

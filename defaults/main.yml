@@ -1,0 +1,14 @@
+## Here default variables for lamp
+# hosts should override them
+enable_https: false
+enable_http: true
+server_admin: "admin@test.net"
+
+#virtualhost_list:
+#  - { user: 'test', domain: 'test.test.net', pass: 'test', db_enabled: false, enabled: true }
+
+#proxies_list:
+#  - {  domain: 'proxy.test.net', target_port: '8080', target_host: 'localhost' enabled: true}
+
+#wordpress_hosts_list:
+#  - { user: 'test', domain: 'test.test.net', pass: 'test', db_enabled: false, enabled: true }
