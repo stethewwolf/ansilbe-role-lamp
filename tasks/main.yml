@@ -16,14 +16,14 @@
     mode: '0644'
     backup: true
   loop: "{{ proxies_list }}"
-  when: "{{ proxies_list }}"
+  when: proxies_list
 
 - name: Enable proxies virtualhosts
   file:
     src: "/etc/apache2/sites-available/{{ item.domain }}.conf"
     dest: "/etc/apache2/sites-enabled/{{ item.domain }}.conf"
     state: link
-  when: "{{ proxies_list }}" and item.enabled 
+  when: proxies_list and item.enabled 
   loop: "{{ proxies_list }}"
   notify: restart_apache2
 
